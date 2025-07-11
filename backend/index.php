@@ -1,27 +1,14 @@
 <?php
+//consts
+const BASE_PATH = __DIR__.'/'; //where index.php is located
 
-// session_start();
-require 'vendor/autoload.php';
-require 'routes/functions.php';
-
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-
-// try {
-//     Router::load('routes/test.php')->direct(uri(),  $_SERVER['REQUEST_METHOD']);
-// } catch (\Exception $e) {
-//     abort($e->getMessage(), $e->getCode());
-// }
+require_once __DIR__ . '/helpers/init.php';
 
 
-// function uri(): string
-// {
-//     return trim(
-//         parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH),
-//         '/'
-//     );
-// }
+header("Access-Control-Allow-Origin: *"); // this will be set to the domain of the frontend app in production
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Content-Type: application/json"); 
 
-require __DIR__ . '/resources/layouts/index.php';
 
-// require __DIR__ . '/resources/views/auth/signin.php';
+
+
