@@ -1,6 +1,6 @@
 <?php
 
-function is_dev() : bool {
+function is_dev(): bool {
     return isset($_ENV['APP_ENVIRONMENT']) && $_ENV['APP_ENVIRONMENT'] === 'Development';
 }
 
@@ -8,7 +8,12 @@ function request_uri(): string {
     if (!isset($_SERVER['REQUEST_URI'])) {
         return '';
     }
-    return trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+
+    if (!$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)) {
+        return '';
+    }
+
+    return trim($path, '/');
 }
 function request_method(): string {
     return $_SERVER['REQUEST_METHOD'];
