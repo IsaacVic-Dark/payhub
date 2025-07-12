@@ -6,7 +6,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 if (!file_exists(BASE_PATH . '.env')) {
     //attempt to copy the .env.example
     if(!file_exists(BASE_PATH . '.env.example') || !copy(BASE_PATH . '.env.example', BASE_PATH . '.env')) {
-        die("Please create a .env file with your database connection details.");
+        trigger_error("Please create a .env file with your database connection details.", E_USER_ERROR);
     }
 }
 //load the environment variables from the .env file
@@ -54,7 +54,6 @@ set_exception_handler(function($exception) {
 //and we can use the $pdo variable in any file that includes this init.php
 // or we can use $GLOBALS['pdo'] to access the PDO instance
 require_once __DIR__ . '/../database/db.php';
-
 
 
 function customErrorHandler($severity, $message, $file, $line, $context = []) {
@@ -154,7 +153,7 @@ function displayError($errorType, $message, $file, $line, $trace, $codeContext, 
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: #fafafa;
+            background-color: #c3c1c13d;
             color: #374151;
             line-height: 1.6;
         }
@@ -162,6 +161,7 @@ function displayError($errorType, $message, $file, $line, $trace, $codeContext, 
 </head>
 <body>
     <div style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
+    
         <!-- Error Header -->
         <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem; padding: 2rem;">
             <div style="display: flex; align-items: center; margin-bottom: 1rem;">
@@ -185,55 +185,10 @@ function displayError($errorType, $message, $file, $line, $trace, $codeContext, 
                     ' . htmlspecialchars($message) . '
                 </p>
             </div>
-        </div>';
+        </div>
+        ';
 
-    // Stack Trace
-    if (!empty($trace)) {
-        $html .= '
-        <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem;">
-            <div style="padding: 1.5rem 2rem; border-bottom: 1px solid #f3f4f6;">
-                <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827;">Stack Trace</h2>
-            </div>
-            
-            <div style="padding: 0;">';
-        
-        foreach ($trace as $index => $frame) {
-            $frameFile = $frame['file'] ?? 'Unknown';
-            $frameLine = $frame['line'] ?? 0;
-            $frameFunction = '';
-            
-            if (isset($frame['class'])) {
-                $frameFunction = $frame['class'] . $frame['type'] . $frame['function'] . '()';
-            } elseif (isset($frame['function'])) {
-                $frameFunction = $frame['function'] . '()';
-            }
-            
-            $isLast = ($index === count($trace) - 1);
-            $borderStyle = $isLast ? '' : 'border-bottom: 1px solid #f9fafb;';
-            $bgColor = $index === 0 ? '#dc2626' : '#6b7280';
-            
-            $html .= '
-                <div style="padding: 1rem 2rem; ' . $borderStyle . '">
-                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="background: ' . $bgColor . '; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-right: 0.75rem;">
-                            ' . ($index + 1) . '
-                        </span>
-                        <code style="color: #6b7280; font-size: 0.875rem;">
-                            ' . htmlspecialchars($frameFile) . ':' . $frameLine . '
-                        </code>
-                    </div>
-                    <div style="margin-left: 2rem;">
-                        <code style="color: #374151; font-size: 0.875rem;">
-                            ' . htmlspecialchars($frameFunction) . '
-                        </code>
-                    </div>
-                </div>';
-        }
-        
-        $html .= '
-            </div>
-        </div>';
-    }
+  
 
     // Code Context
     if (!empty($codeContext)) {
@@ -271,7 +226,6 @@ function displayError($errorType, $message, $file, $line, $trace, $codeContext, 
             </div>
         </div>';
     }
-
     // Request Info
     $html .= '
         <div style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
@@ -288,10 +242,10 @@ function displayError($errorType, $message, $file, $line, $trace, $codeContext, 
                     <div style="color: #374151;">' . htmlspecialchars($requestInfo['ip']) . '</div>
                     
                     <div style="color: #6b7280; font-weight: 600;">User Agent:</div>
-                    <div style="color: #374151;">' . htmlspecialchars($requestInfo['user_agent']) . '</div>
+                    <code style="color: #374151;">' . htmlspecialchars($requestInfo['user_agent']) . '</code>
                     
                     <div style="color: #6b7280; font-weight: 600;">Timestamp:</div>
-                    <div style="color: #374151;">' . htmlspecialchars($requestInfo['timestamp']) . '</div>
+                    <code style="color: #374151;">' . htmlspecialchars($requestInfo['timestamp']) . '</code>
                 </div>
             </div>
         </div>
