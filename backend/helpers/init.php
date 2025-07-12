@@ -1,12 +1,15 @@
 <?php
+/**
+ * init.php - this is the main entry point for the application
+ * 
+ * @author Peter Munene <munenenjega@gmail.com>
+ */
 
 //include the autoload file and all helpers
 require_once __DIR__ . '/../vendor/autoload.php';
 
-
-
+//attempt to copy the .env.example
 if (!file_exists(BASE_PATH . '.env')) {
-    //attempt to copy the .env.example
     if(!file_exists(BASE_PATH . '.env.example') || !copy(BASE_PATH . '.env.example', BASE_PATH . '.env')) {
         trigger_error("Please create a .env file with your database connection details.", E_USER_ERROR);
     }
@@ -34,7 +37,7 @@ if (isset($_ENV['APP_TIMEZONE']) && in_array($_ENV['APP_TIMEZONE'], timezone_ide
 // Set the error handler
 set_error_handler('customErrorHandler');
 
-// Optional: Handle fatal errors and exceptions
+//Handle fatal errors and exceptions
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])) {
@@ -54,10 +57,11 @@ set_exception_handler(function($exception) {
 
 //set up db connection globally, it fails,and throws an exception if it cannot connect
 //and we can use the $pdo variable in any file that includes this init.php
-// or we can use $GLOBALS['pdo'] to access the PDO instance
+//or we can use $GLOBALS['pdo'] to access the PDO instance
 require_once __DIR__ . '/../database/db.php';
 
 //autoload all the files, after setting up db so that we have access to it
+// and any helpers that we define
 foreach (glob(__DIR__ . '/*.php') as $file) {
     if (basename($file) === 'init.php') {
         continue; // skip init.php to avoid circular loading
@@ -138,6 +142,7 @@ function getCodeContext($file, $errorLine, $contextLines = 3) {
     return $context;
 }
 
+//this was generated using ai to resemble what laravel provides
 function displayError($errorType, $message, $file, $line, $trace, $codeContext, $requestInfo) {
     // Clear any existing output
     if (ob_get_level()) {
