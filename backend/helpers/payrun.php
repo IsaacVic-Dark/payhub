@@ -1,9 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../../app/Logic/tax.php';
 
-echo "<h2>Pay Run Management</h2>";
-require_once __DIR__ . '/../components/nav.php';
 
 // PayRun.php - Main PayRun Class
 class PayRun {
@@ -189,8 +186,7 @@ class PayRun {
 
 // payrun_create.php - Create Pay Run Page
 session_start();
-require_once __DIR__ . '/../../database/db.php';
-require_once 'PayRun.php';
+
 
 // Check admin access
 // if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
@@ -198,7 +194,7 @@ require_once 'PayRun.php';
 //     exit;
 // }
 
-$id = $_SESSION['user']['UserID'];
+$id = isset($_SESSION['user']['UserID']) ? $_SESSION['user']['UserID'] : null;
 
 $payrun = new PayRun($pdo, $id);
 
@@ -217,56 +213,4 @@ if ($_POST) {
     }
 }
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Pay Run</title>
-</head>
-<body>
-    <!-- <h1>Create New Pay Run</h1> -->
-    
-    <?php if (isset($message)): ?>
-        <p style="color: green;"><?= $message ?></p>
-    <?php endif; ?>
-    
-    <?php if (isset($error)): ?>
-        <p style="color: red;"><?= $error ?></p>
-    <?php endif; ?>
-    
-    <form method="POST">
-        <table>
-            <tr>
-                <td>Pay Run Name:</td>
-                <td><input type="text" name="payrun_name" required></td>
-            </tr>
-            <tr>
-                <td>Pay Period Start:</td>
-                <td><input type="date" name="pay_period_start" required></td>
-            </tr>
-            <tr>
-                <td>Pay Period End:</td>
-                <td><input type="date" name="pay_period_end" required></td>
-            </tr>
-            <tr>
-                <td>Pay Frequency:</td>
-                <td>
-                    <select name="pay_frequency">
-                        <option value="weekly">Weekly</option>
-                        <option value="bi-weekly">Bi-Weekly</option>
-                        <option value="monthly" selected>Monthly</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Create Pay Run">
-                    <a href="payrun_list.php">Back to Pay Runs</a>
-                </td>
-            </tr>
-        </table>
-    </form>
-</body>
-</html>
-
 

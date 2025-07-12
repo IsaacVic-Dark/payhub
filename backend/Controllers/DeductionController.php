@@ -1,7 +1,6 @@
 <?php
 
-require_once __DIR__ . "/../../database/db.php";
-require_once __DIR__ . "/../Logic/tax.php";
+namespace App\Controllers;
 
 
 class DeductionController

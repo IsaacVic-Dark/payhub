@@ -1,20 +1,13 @@
 <?php
 
-require __DIR__ . '/../../database/db.php';
-require_once __DIR__ . '../../../core/helper.php';
-require_once __DIR__ . '/../../app/Logic/tax.php';
+namespace App\Controllers;
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json");
-
-class EmployeeController
-{
+class EmployeeController {
     private $pdo;
     private $defaultLimit = 5;
     private $emailDomain = 'payroll.com';
 
-    public function __construct(PDO $pdo)
-    {
+    public function __construct(\PDO $pdo) {
         $this->pdo = $pdo;
     }
 
@@ -22,28 +15,20 @@ class EmployeeController
      * Fetch all employees with pagination
      * @return array [employees, totalPages, currentPage]
      */
-    public function fetchAllEmployees(): array
-    {
-        $pagination = PaginationHelper::getPagination([
-            'pdo' => $this->pdo,
-            'table' => 'employees',
-            'limit' => $this->defaultLimit,
-        ]);
+    public function fetchAllEmployees(): array {
+
 
         $stmt = $this->pdo->prepare("
-            SELECT e.*, p.PaymentStatus 
+            SELECT e.*, pd.*
             FROM employees AS e 
-            JOIN payroll AS p ON p.EmployeeID = e.EmployeeID 
-            LIMIT :limit OFFSET :offset
+            JOIN payrun_details AS pd ON pd.employee_id = e.id
         ");
-        
-        $stmt->bindValue(':limit', $pagination['limit'], PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
-        $stmt->execute();
-        
-        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return [$employees, $pagination['totalPages'], $pagination['page']];
+        $stmt->execute();
+
+        $employees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $employees;
     }
 
     /**
@@ -51,13 +36,12 @@ class EmployeeController
      * @param int $id
      * @return array|false
      */
-    public function fetchEmployeeById(int $id)
-    {
+    public function fetchEmployeeById(int $id) {
         $stmt = $this->pdo->prepare("SELECT * FROM employees WHERE EmployeeID = :id");
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
         $stmt->execute();
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -65,18 +49,17 @@ class EmployeeController
      * @param string $name
      * @return array
      */
-    public function fetchEmployeeByName(string $name): array
-    {
+    public function fetchEmployeeByName(string $name): array {
         $searchTerm = "%{$name}%";
         $stmt = $this->pdo->prepare("
             SELECT * FROM employees 
             WHERE FirstName LIKE :name OR LastName LIKE :name
         ");
-        
-        $stmt->bindParam(':name', $searchTerm, PDO::PARAM_STR);
+
+        $stmt->bindParam(':name', $searchTerm, \PDO::PARAM_STR);
         $stmt->execute();
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -84,25 +67,23 @@ class EmployeeController
      * @param int $id
      * @return bool
      */
-    public function deleteEmployeeById(int $id): bool
-    {
+    public function deleteEmployeeById(int $id): bool {
         try {
             $this->pdo->beginTransaction();
-            
+
             // Delete from related tables first (if needed)
             $this->deleteEmployeeRelatedData($id);
-            
+
             // Delete employee
             $stmt = $this->pdo->prepare("DELETE FROM employees WHERE EmployeeID = :id");
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->bindParam(':id', $id, \PDO::PARAM_INT);
             $result = $stmt->execute();
-            
+
             $this->pdo->commit();
             return $result;
-            
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->pdo->rollBack();
-            throw new Exception("Failed to delete employee: " . $e->getMessage());
+            throw new \Exception("Failed to delete employee: " . $e->getMessage());
         }
     }
 
@@ -111,29 +92,27 @@ class EmployeeController
      * @param array $employeeDetail
      * @return int Employee ID
      */
-    public function addEmployee(array $employeeDetail): int
-    {
+    public function addEmployee(array $employeeDetail): int {
         try {
             $this->pdo->beginTransaction();
 
             // Generate credentials
             $credentials = $this->generateEmployeeCredentials($employeeDetail);
-            
+
             // Insert employee
             $employeeId = $this->insertEmployee($employeeDetail, $credentials['email']);
-            
+
             // Insert user account
             $this->insertUserAccount($employeeDetail, $credentials, $employeeId);
-            
+
             // Insert payroll record
             $this->insertPayrollRecord($employeeId, $employeeDetail['Salary']);
-            
+
             $this->pdo->commit();
             return $employeeId;
-            
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->pdo->rollBack();
-            throw new Exception("Failed to add employee: " . $e->getMessage());
+            throw new \Exception("Failed to add employee: " . $e->getMessage());
         }
     }
 
@@ -143,8 +122,7 @@ class EmployeeController
      * @param array $employeeDetail
      * @return bool
      */
-    public function updateEmployee(int $id, array $employeeDetail): bool
-    {
+    public function updateEmployee(int $id, array $employeeDetail): bool {
         try {
             $stmt = $this->pdo->prepare("
                 UPDATE Employees SET 
@@ -174,9 +152,8 @@ class EmployeeController
                 ':TaxID' => $employeeDetail['TaxID'],
                 ':id' => $id
             ]);
-            
-        } catch (Exception $e) {
-            throw new Exception("Failed to update employee: " . $e->getMessage());
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to update employee: " . $e->getMessage());
         }
     }
 
@@ -184,8 +161,7 @@ class EmployeeController
      * Count total employees
      * @return int
      */
-    public function countEmployees(): int
-    {
+    public function countEmployees(): int {
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM employees");
         $countEmployees = $stmt->fetchColumn();
         return json_encode($countEmployees);
@@ -195,8 +171,7 @@ class EmployeeController
      * Set pagination limit
      * @param int $limit
      */
-    public function setDefaultLimit(int $limit): void
-    {
+    public function setDefaultLimit(int $limit): void {
         $this->defaultLimit = $limit;
     }
 
@@ -207,11 +182,10 @@ class EmployeeController
      * @param array $employeeDetail
      * @return array
      */
-    private function generateEmployeeCredentials(array $employeeDetail): array
-    {
+    private function generateEmployeeCredentials(array $employeeDetail): array {
         $firstName = strtolower($employeeDetail['FirstName']);
         $lastName = strtolower($employeeDetail['LastName']);
-        
+
         $email = "{$firstName}.{$lastName}@{$this->emailDomain}";
         $rawPassword = "payroll@{$firstName}";
         $hashedPassword = password_hash($rawPassword, PASSWORD_BCRYPT);
@@ -231,8 +205,7 @@ class EmployeeController
      * @param string $email
      * @return int Employee ID
      */
-    private function insertEmployee(array $employeeDetail, string $email): int
-    {
+    private function insertEmployee(array $employeeDetail, string $email): int {
         $stmt = $this->pdo->prepare("
             INSERT INTO Employees (
                 FirstName, LastName, Email, Phone, HireDate, 
@@ -265,8 +238,7 @@ class EmployeeController
      * @param array $credentials
      * @param int $employeeId
      */
-    private function insertUserAccount(array $employeeDetail, array $credentials, int $employeeId): void
-    {
+    private function insertUserAccount(array $employeeDetail, array $credentials, int $employeeId): void {
         $department = strtolower($employeeDetail['Department']);
         $userType = ($department === 'hr') ? 'admin' : 'user';
 
@@ -291,8 +263,7 @@ class EmployeeController
      * @param int $employeeId
      * @param float $baseSalary
      */
-    private function insertPayrollRecord(int $employeeId, float $baseSalary): void
-    {
+    private function insertPayrollRecord(int $employeeId, float $baseSalary): void {
         $payPeriodStart = date('Y-m-01');
         $payPeriodEnd = date('Y-m-t');
 
@@ -316,11 +287,10 @@ class EmployeeController
      * Delete employee related data (payroll, user accounts, etc.)
      * @param int $employeeId
      */
-    private function deleteEmployeeRelatedData(int $employeeId): void
-    {
+    private function deleteEmployeeRelatedData(int $employeeId): void {
         // Delete from payroll
         $stmt = $this->pdo->prepare("DELETE FROM payroll WHERE EmployeeID = :id");
-        $stmt->bindParam(':id', $employeeId, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $employeeId, \PDO::PARAM_INT);
         $stmt->execute();
 
         // Delete from users (if needed)
@@ -328,7 +298,7 @@ class EmployeeController
         $employee = $this->fetchEmployeeById($employeeId);
         if ($employee) {
             $stmt = $this->pdo->prepare("DELETE FROM users WHERE Email = :email");
-            $stmt->bindParam(':email', $employee['Email'], PDO::PARAM_STR);
+            $stmt->bindParam(':email', $employee['Email'], \PDO::PARAM_STR);
             $stmt->execute();
         }
     }

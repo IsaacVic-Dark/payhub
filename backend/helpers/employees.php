@@ -1,13 +1,10 @@
 <?php 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
 
-require __DIR__ . '/../../app/Controllers/EmployeeController.php';
+use App\Controllers\EmployeeController;
 
-$employeeController = new EmployeeController($pdo);
-$data = $employeeController->fetchAllEmployees($pdo);
+
+$employeeController = new EmployeeController($GLOBALS['pdo']);
+$data = $employeeController->fetchAllEmployees();
 
 // Part of react
 echo json_encode($data);

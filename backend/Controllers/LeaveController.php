@@ -1,11 +1,8 @@
 <?php 
 
-require __DIR__ . '/../../database/db.php';
-require_once __DIR__ . '../../../core/helper.php';
+namespace App\Controllers;
 
-
-
-class LeaveController{
+class LeaveController {
 
     private $pdo;
 
