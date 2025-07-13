@@ -209,6 +209,7 @@ function paginate(array $data, int $per_page = 10, int $page = 1): array {
  * @return void
  */
 function dd($var) {
+    header("Content-Type: text/html");
     // Get backtrace information
     $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
     $caller = $backtrace[0] ?? [];
