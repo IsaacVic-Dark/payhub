@@ -1,11 +1,13 @@
 <?php
 
 use App\Services\Router;
+use App\Controllers\OrganizationController;
 
-Router::get('/api', function () {
-    echo json_decode( 9);
-});
 
-Router::get('/api/{d+}', function ($d) {
+Router::resource('api/v1/organizations', OrganizationController::class);
+
+
+
+Router::get('/api/test', function ($d) {
     echo json_encode($d);
 });
