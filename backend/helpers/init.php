@@ -1,4 +1,6 @@
 <?php
+
+use App\Services\DB;
 /**
  * init.php - this is the main entry point for the application
  * 
@@ -59,6 +61,8 @@ set_exception_handler(function($exception) {
 //and we can use the $pdo variable in any file that includes this init.php
 //or we can use $GLOBALS['pdo'] to access the PDO instance
 require_once __DIR__ . '/../database/db.php';
+
+DB::getInstance($pdo);
 
 //autoload all the files, after setting up db so that we have access to it
 // and any helpers that we define
