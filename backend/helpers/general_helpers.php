@@ -165,10 +165,113 @@ function responseJson($data, string $message, int $code = 200, array $metadata =
     echo json_encode([
         'data' => $data,
         'message' => $message,
-        'metadata' => empty($metadata) ? null : $metadata
+        'metadata' => $metadata ?: null
     ]);
+    exit(0);
+}
+function getInputData(): array {
+    $input = file_get_contents('php://input');
+    $json = json_decode($input, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        responseJson(null, 'Invalid JSON input.', 400);
+    }
+
+    return is_array($json) ? $json : [];
 }
 
+function validate(array $rules): array {
+    $input = array_merge($_GET, $_POST, getInputData());
+    $errors = [];
+    $sanitized = [];
+
+    foreach ($rules as $field => $ruleStr) {
+        $value = $input[$field] ?? null;
+        $ruleList = array_map('trim', explode(',', $ruleStr));
+        $isRequired = in_array('required', $ruleList);
+
+        if ($isRequired && ($value === null || $value === '')) {
+            $errors[$field] = "$field is required.";
+            continue;
+        }
+
+        if ($value === null || $value === '') {
+            $sanitized[$field] = null;
+            continue;
+        }
+
+        foreach ($ruleList as $rule) {
+            if ($rule === 'string' && !is_string($value)) {
+                $errors[$field] = "$field must be a string.";
+                break;
+            }
+
+            if ($rule === 'numeric' && !is_numeric($value)) {
+                $errors[$field] = "$field must be numeric.";
+                break;
+            }
+
+            if ($rule === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                $errors[$field] = "$field must be a valid email address.";
+                break;
+            }
+
+            if ($rule === 'url' && !filter_var($value, FILTER_VALIDATE_URL)) {
+                $errors[$field] = "$field must be a valid URL.";
+                break;
+            }
+
+            if (str_starts_with($rule, 'max-length')) {
+                $limit = (int)substr($rule, strlen('max-length'));
+                if (strlen($value) > $limit) {
+                    $errors[$field] = "$field must not exceed $limit characters.";
+                    break;
+                }
+            }
+
+            if (str_starts_with($rule, 'min-length')) {
+                $limit = (int)substr($rule, strlen('min-length'));
+                if (strlen($value) < $limit) {
+                    $errors[$field] = "$field must be at least $limit characters.";
+                    break;
+                }
+            }
+        }
+
+        if (!isset($errors[$field])) {
+            $sanitized[$field] = htmlspecialchars(trim((string)$value));
+        }
+    }
+
+    if (!empty($errors)) {
+        responseJson($errors, 'Validation error', 400);
+    }
+
+    return $sanitized;
+}
+
+function handleFileUpload(string $key, string $uploadDir = BASE_PATH.'uploads/'): ?string {
+    if (!isset($_FILES[$key]) || $_FILES[$key]['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $originalName = $_FILES[$key]['name'];
+    $tmpPath = $_FILES[$key]['tmp_name'];
+    $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+
+    $filename = uniqid('upload_', true) . '.' . $ext;
+    $destination = rtrim($uploadDir, '/') . '/' . $filename;
+
+    if (move_uploaded_file($tmpPath, $destination)) {
+        return $destination;
+    }
+
+    return null;
+}
 
 
 

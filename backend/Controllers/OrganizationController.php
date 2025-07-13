@@ -3,35 +3,32 @@
 namespace App\Controllers;
 
 use App\Services\DB;
-use App\Services\MainController;
 
-class OrganizationController extends MainController {
-
+class OrganizationController {
     public function index() {
-        return $this->responseJson(
+        return responseJson(
             data: DB::table('organizations')->selectAll(),
             message: "Successfull fetch all organisations",
             metadata: ['dev_mode' => true]
         );
     }
     public function create() {
-        //validate
-        if (empty($_POST['name']) || empty($_POST['location']) || empty($_POST['logo_url']) || empty($_POST['currency'])) {
-            return $this->responseJson(
-                data: null,
-                message: "All fields are required",
-                code: 400
-            );
-        }
+        $data = validate([
+            'name' => 'required,string',
+            'location' => 'required,string',
+            'logo_url' => 'required,string',
+            'currency' => 'string'
+        ]);
 
         //insert into db
         $inserted = DB::table('organizations')->insert([
-            'name' => $_POST['name'],
-            'location' => $_POST['location'],
-            'logo_url' => $_POST['logo_url'],
-            'currency' => $_POST['currency'],
+            'name' => $data['name'],
+            'location' => $data['location'],
+            'logo_url' => $data['logo_url'],
+            'currency' => strtoupper($data['currency']),
         ]);
-        return $this->responseJson(
+
+        return responseJson(
             data: $inserted,
             message: "Organization created successfully",
             metadata: ['dev_mode' => true]
