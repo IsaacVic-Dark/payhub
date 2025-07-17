@@ -11,6 +11,7 @@ class EmployeeController {
             'job_title' => $_GET['job_title'] ?? null,
         ];
         $employees = DB::table('employees')->selectAllWhere('organization_id', $orgId);
+
         foreach ($filters as $key => $val) {
             if ($val !== null) {
                 $employees = array_filter($employees, fn($e) => $e->$key == $val);
@@ -18,8 +19,9 @@ class EmployeeController {
         }
         return responseJson(
             data: array_values($employees),
-            message: "Fetched employees",
-            metadata: ['dev_mode' => true]
+            message: empty($employees) ? "No employees found" : "Fetched employees",
+            metadata: ['dev_mode' => true],
+            code: empty($employees) ? 404 : 200
         );
     }
     public function create($orgId) {
@@ -68,6 +70,9 @@ class EmployeeController {
             'bank_account_number' => $data['bank_account_number'] ?? null,
             'tax_id' => $data['tax_id'] ?? null,
         ]);
+        if (!$inserted) {
+            return responseJson(null, "Failed to create employee", 500);
+        }
         return responseJson(
             data: $inserted,
             message: "Employee created successfully",
@@ -82,8 +87,9 @@ class EmployeeController {
         }
         return responseJson(
             data: array_values($employee)[0],
-            message: "Employee fetched successfully",
-            metadata: ['dev_mode' => true]
+            message: empty($employee) ? "No employee found" : "Employee fetched successfully",
+            metadata: ['dev_mode' => true],
+            code: empty($employee) ? 404 : 200
         );
     }
     public function update($orgId, $id) {
