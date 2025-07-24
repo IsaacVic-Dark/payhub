@@ -6,21 +6,62 @@ use App\Services\DB;
 
 class EmployeeController {
     public function index($orgId) {
+        $startTime = microtime(true);
         $filters = [
             'department' => $_GET['department'] ?? null,
             'job_title' => $_GET['job_title'] ?? null,
         ];
-        $employees = DB::table('employees')->selectAllWhere('organization_id', $orgId);
-
-        foreach ($filters as $key => $val) {
-            if ($val !== null) {
-                $employees = array_filter($employees, fn($e) => $e->$key == $val);
+        // Validate organization ID
+        if (!is_numeric($orgId)) {
+            return responseJson(null, "Invalid organization ID", 400);
+        }
+        // cleanup filters
+        // to shorten this, but am n confused aboutit as the order matters
+        // otherwise we are fuuuucked!
+        array_walk($filters, function (&$value) {
+            if (is_string($value)) {
+                // URL decode if needed
+                $value = urldecode($value);
+                // Trim whitespace and special characters as before
+                $value = trim($value, " \t\n\r\0\x0B");
+                // Remove surrounding quotes only (if they exist)
+                if (
+                    (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                ) {
+                    $value = substr($value, 1, -1);
+                }
             }
+        });
+
+        $employees = cache()->remember("employees_{$orgId}_" . md5(json_encode($filters)),3600,fn() =>
+                DB::table('employees')->where([
+                    'organization_id' => (int)$orgId,
+                    'department' => $filters['department'],
+                    'job_title' => $filters['job_title'],
+                ])->get()
+            );
+      
+
+        // Sort employees if sort parameters are provided, use php for now
+        // as implementing sorting in SQL would require dynamic query building
+        // which i do not have the time for right 
+
+        //but lets add it to filters
+        $filters['sort_by'] = $_GET['sort_by'] ?? null;
+        $filters['sort_order'] = $_GET['sort_order'] ?? null;
+
+        if (isset($filters['sort_by']) && isset($filters['sort_order'])) {
+            $sortBy = $filters['sort_by'];
+            $sortOrder = strtolower($filters['sort_order']) === 'desc' ? SORT_DESC : SORT_ASC;
+            usort($employees, function ($a, $b) use ($sortBy, $sortOrder) {
+                return $sortOrder === SORT_DESC ? $b->$sortBy <=> $a->$sortBy : $a->$sortBy <=> $b->$sortBy;
+            });
         }
         return responseJson(
             data: array_values($employees),
-            message: empty($employees) ? "No employees found" : "Fetched employees",
-            metadata: ['dev_mode' => true],
+            message: empty($employees) ? "No employees found" : "successfully fetched " . count($employees) . " employees",
+            metadata: ['dev_mode' => true, 'filters' => $filters, 'total' => count($employees), 'duration' => (microtime(true) - $startTime)],
             code: empty($employees) ? 404 : 200
         );
     }
